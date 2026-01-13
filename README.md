@@ -29,6 +29,7 @@ This repository contains the source code for our animations using [Motion Canvas
 ## Workflow
 
 * **Edit:** Open `src/scenes/` to modify the animation code.
+* The various file names for the scenes are: **creation.tsx, praise.tsx, vandalism.tsx, perception.tsx** and **redemption.tsx**.
 * **Preview:** Changes are reflected instantly in the browser at `http://localhost:9000`.
 * **Scrub:** Use the browser timeline to debug specific frames.
 
