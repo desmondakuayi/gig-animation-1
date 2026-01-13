@@ -12,7 +12,7 @@ This repository contains the source code for our animations using [Motion Canvas
 1.  **Clone the repository:**
     ```bash
     git clone https://github.com/desmondakuayi/gig-animation-1.git
-    cd <gig-animation-1>
+    cd gig-animation-1
     ```
 
 2.  **Install dependencies:**
