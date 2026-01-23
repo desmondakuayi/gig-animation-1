@@ -1,89 +1,78 @@
-import {makeScene2D, Circle, Layout, Rect, Line} from '@motion-canvas/2d';
-import {createRef, all, waitFor, range, useRandom, createSignal, Vector2} from '@motion-canvas/core';
+import {makeScene2D, Circle, Spline, Rect, Txt} from '@motion-canvas/2d';
+import {createRef, all, easeInCubic, easeOutElastic, easeInBounce} from '@motion-canvas/core';
 
 export default makeScene2D(function* (view) {
-  view.fill('#000000');
-  const rng = useRandom();
-
-  // --- 1. RE-CREATE SCENE 2 END STATE ---
-  const musicContainer = createRef<Layout>();
-  const musicSignal = createSignal(0); // We'll keep them static or low for the fade out
-
-  // --- 2. NEW ASSETS FOR SCENE 3 ---
-  const perfectCircle = createRef<Circle>();
-  const chaosContainer = createRef<Layout>();
+  const coreRef = createRef<Circle>();
+  const scarRef = createRef<Spline>();
+  const textRef = createRef<Txt>();
+  const bgRef = createRef<Rect>();
 
   view.add(
-    <Layout>
-      {/* MUSIC BARS (Visible at start) */}
-      <Layout ref={musicContainer} opacity={1} y={50}>
-        {range(5).map(i => (
-            <Rect
-                width={40}
-                // Just giving them a fixed random height for the transition look
-                height={50 + Math.random() * 50} 
-                fill={'#ffffff'}
-                x={(i - 2) * 60}
-                radius={20}
-            />
-        ))}
-      </Layout>
+    <>
+      {/* BACKGROUND - We give it a ref so we can flash it red later */}
+      <Rect ref={bgRef} size={'100%'} fill={'#0a0a1a'} />
 
-      {/* THE TARGET (Initially Invisible) */}
+      {/* THE CORE (Positioned at y=-50 to match the previous scene) */}
       <Circle
-        ref={perfectCircle}
-        size={400}
-        stroke={'#ffffff'}
-        lineWidth={8}
-        opacity={0} // Hidden at start
+        ref={coreRef}
+        y={-50} 
+        size={300}
+        fill={'#ffffff'}
+        shadowBlur={100} // High glow from the Praise scene
+        shadowColor={'#ffffff'}
       />
 
-      {/* THE VANDALISM LAYER (Empty at start) */}
-      <Layout ref={chaosContainer} />
-    </Layout>
+      {/* THE SCAR (Vandalism) */}
+      <Spline
+        ref={scarRef}
+        lineWidth={12} // Thicker line for more aggression
+        stroke={'#000000'} // Pure black creates high contrast
+        end={0} // Invisible start
+        points={[
+          [-100, -170], 
+          [-20, -100],   
+          [40, 0],     
+          [120, 100],   
+        ]}
+        smoothness={0.4}
+      />
+
+      {/* THE TEXT */}
+      <Txt
+        ref={textRef}
+        text={'VANDALISM'}
+        y={250}
+        fill={'#ff4444'} // A desaturated red for "danger/sin"
+        fontFamily={'Segoe UI, Helvetica, sans-serif'}
+        fontSize={60}
+        fontWeight={700} // Bold weight for impact
+        opacity={0}
+        letterSpacing={8}
+      />
+    </>
   );
 
-  // --- ANIMATION START ---
+  // 1. SUSPENSE: A brief moment of silence before the strike
+  yield* coreRef().shadowBlur(60, 1); // The glory dims slightly before the hit
 
-  // 1. Reset: Fade out music, bring back the Perfect Circle
-  // "But how come it doesn't feel so good sometimes?"
+  // 2. THE STRIKE (Happens very fast)
   yield* all(
-    musicContainer().opacity(0, 1),
-    perfectCircle().opacity(1, 1),
+    // The scar draws instantly
+    scarRef().end(1, 0.1, easeInCubic),
+    
+    // The text slams in
+    textRef().opacity(1, 0),
+    textRef().scale(2, 0).to(1, 0.3, easeOutElastic), // Starts big and slams down
+    
+    // The Core reacts (shrinks/winces)
+    coreRef().scale(0.8, 0.1).to(1, 0.5, easeOutElastic),
+    coreRef().fill('#bbbbbb', 0.2), // Turns grey/dull
+    coreRef().shadowBlur(0, 0.2),   // The holy glow is extinguished instantly
+    
+    // Optional: Flash the background slightly red for impact
+    bgRef().fill('#1a0a0a', 0.1).to('#0a0a1a', 0.5), 
   );
-
-  yield* waitFor(0.5);
-
-  // 2. The Attack: "Fracture by a bad actor"
-  // We spawn 10 random jagged lines aggressively
-  for (let i = 0; i < 10; i++) {
-    //for (let i = 0; i < 10; i++) {
-    // We explicitly create Vector2 objects here
-    const randomPoints = [
-        new Vector2(rng.nextInt(-100, 100), rng.nextInt(-100, 100)),
-        new Vector2(rng.nextInt(-100, 100), rng.nextInt(-100, 100)),
-        new Vector2(rng.nextInt(-100, 100), rng.nextInt(-100, 100)),
-    ];
-    
-    const lineRef = createRef<Line>();
-    
-    chaosContainer().add(
-        <Line
-            ref={lineRef}
-            points={randomPoints}
-            stroke={'#ff0000'} // Red for "Sin/Vandalism"
-            lineWidth={5}
-            end={0} // Start undrawn
-        />
-    );
-
-    // Animate the scratch quickly (0.1s)
-    yield* lineRef().end(1, 0.1); 
-    
-    // Tiny pause between scratches for rhythm
-    yield* waitFor(0.05);
-  }
-
-  // Hold the mess for the viewer to see
-  yield* waitFor(2);
+  
+  // 3. AFTERMATH: The scar pulsates like a wound
+  yield* scarRef().lineWidth(15, 1).to(12, 1);
 });

@@ -1,64 +1,60 @@
-import {makeScene2D, Circle, Txt, Layout} from '@motion-canvas/2d';
-import {createRef, all, waitFor, easeInOutCubic} from '@motion-canvas/core';
+import {makeScene2D, Circle, Rect} from '@motion-canvas/2d';
+import {createRef, all, easeOutSine, easeInOutSine} from '@motion-canvas/core';
 
 export default makeScene2D(function* (view) {
-  view.fill('#000000');
-
-  const perfectCircle = createRef<Circle>();
-  const mainText = createRef<Txt>();
-  const subText = createRef<Txt>();
+  const coreRef = createRef<Circle>();
+  const ripple1 = createRef<Circle>();
+  const ripple2 = createRef<Circle>();
 
   view.add(
-    <Layout>
+    <>
+      {/* 1. BACKGROUND: Solid Dark Blue (Safe & Clean) */}
+      <Rect
+        size={'100%'}
+        fill={'#0a0a1a'} 
+      />
+
+      {/* 2. RIPPLES */}
       <Circle
-        ref={perfectCircle}
-        size={400}
+        ref={ripple1}
+        size={300}
         stroke={'#ffffff'}
-        lineWidth={8}
-        startAngle={-90}
-        endAngle={-90}
+        lineWidth={2}
         opacity={0}
       />
-      <Txt
-        ref={mainText}
-        text={"INVISIBLE ATTRIBUTES"}
+      <Circle
+        ref={ripple2}
+        size={300}
+        stroke={'#ffffff'}
+        lineWidth={2}
+        opacity={0}
+      />
+
+      {/* 3. THE CORE */}
+      <Circle
+        ref={coreRef}
+        size={300}
         fill={'#ffffff'}
-        fontFamily={'JetBrains Mono, monospace'} // specific font
-        fontSize={70}
-        opacity={0}
+        shadowBlur={60}
+        shadowColor={'#ffffff'}
       />
-       <Txt
-        ref={subText}
-        text={"clearly seen"}
-        fill={'#aaaaaa'}
-        fontSize={60}
-        y={50}
-        opacity={0}
-      />
-    </Layout>
+    </>
   );
 
-  // --- ANIMATION ---
-  perfectCircle().opacity(1);
-  yield* perfectCircle().endAngle(270, 2, easeInOutCubic);
-  yield* waitFor(0.5);
+  // ANIMATION LOOP
+  // We pulse the ripples 2 times to make sure you see it working
+  for (let i = 0; i < 2; i++) {
+    yield* all(
+      // Breathe Core
+      coreRef().scale(1.1, 2, easeInOutSine).to(1, 2, easeInOutSine),
+      
+      // Ripple 1
+      ripple1().opacity(0.5, 0).to(0, 3, easeOutSine),
+      ripple1().scale(1, 0).to(1.8, 3, easeOutSine),
 
-  yield* perfectCircle().scale(1.05, 0.3).to(1, 0.3);
-  yield* perfectCircle().scale(1.05, 0.3).to(1, 0.3);
-
-  // Transition to "Icon" state (End State for Scene 1)
-  yield* all(
-    perfectCircle().y(-50, 1),
-    perfectCircle().fill('#ffffff', 1),
-    perfectCircle().scale(0.5, 1)
-  );
-
-  yield* all(
-    mainText().opacity(1, 1),
-    mainText().y(100, 1),
-    subText().opacity(1, 1.2),
-    subText().y(150, 1.2),
-  );
-
-  yield* waitFor(1.5);
+      // Ripple 2
+      ripple2().opacity(0.5, 0).to(0, 4, easeOutSine),
+      ripple2().scale(1, 0).to(2.0, 4, easeOutSine),
+    );
+  }
 });

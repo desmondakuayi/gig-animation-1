@@ -1,95 +1,53 @@
-import {makeScene2D, Circle, Layout, Rect, Line} from '@motion-canvas/2d';
-import {createRef, all, waitFor, Vector2, easeInOutCubic} from '@motion-canvas/core';
+import {makeScene2D, Circle, Spline, Rect, Txt, Line} from '@motion-canvas/2d';
+import {createRef, all, easeOutSine, easeInCubic} from '@motion-canvas/core';
 
 export default makeScene2D(function* (view) {
-  view.fill('#000000'); // Background stays fixed
-
-  // --- 1. ASSETS ---
-  const sceneContainer = createRef<Layout>(); // NEW: Wrapper for everything
-  
-  const perfectCircle = createRef<Circle>();
-  const chaosContainer = createRef<Layout>();
-  const observerRef = createRef<Layout>(); 
-  const distortionGlass = createRef<Rect>();
-  const crackLines = createRef<Layout>();
+  const glassRef = createRef<Rect>();
+  const textRef = createRef<Txt>();
+  const crack1 = createRef<Line>();
+  const crack2 = createRef<Line>();
 
   view.add(
-    // WRAP EVERYTHING IN THIS CONTAINER
-    <Layout ref={sceneContainer}> 
-      
-      {/* BACKGROUND CIRCLE */}
-      <Circle
-        ref={perfectCircle}
-        size={400}
-        stroke={'#ffffff'}
-        lineWidth={8}
-        opacity={1}
+    <>
+      <Rect size={'100%'} fill={'#0a0a1a'} />
+
+      <Circle y={-50} size={300} fill={'#bbbbbb'} />
+      <Spline
+        lineWidth={12} stroke={'#000000'}
+        points={[[-100, -170], [-20, -100], [40, 0], [120, 100]]}
+        smoothness={0.4}
       />
-      
-      {/* STATIC CHAOS */}
-      <Layout ref={chaosContainer}>
-         <Line stroke={'#ff0000'} lineWidth={5} points={[new Vector2(-50, -50), new Vector2(50, 50)]} />
-         <Line stroke={'#ff0000'} lineWidth={5} points={[new Vector2(80, -20), new Vector2(-20, 80)]} />
-         <Line stroke={'#ff0000'} lineWidth={5} points={[new Vector2(-10, -90), new Vector2(10, 20)]} />
-         <Line stroke={'#ff0000'} lineWidth={5} points={[new Vector2(-80, 20), new Vector2(-120, -40)]} />
-      </Layout>
 
-      {/* THE OBSERVER CHARACTER */}
-      <Layout
-        ref={observerRef}
-        x={-500}
-        y={100}
+      <Rect
+        ref={glassRef} y={-50} width={400} height={400}
+        fill={'#ffffff'} opacity={0} radius={20}
       >
-        <Circle size={60} fill={'#333333'} y={-70} />
-        <Rect width={60} height={100} fill={'#333333'} radius={30} />
-        <Rect width={20} height={70} fill={'#333333'} x={10} y={-10} radius={10} rotation={-10} />
-      </Layout>
+        <Line ref={crack1} points={[[-100, -150], [0, -50], [-50, 50]]} stroke={'#000000'} lineWidth={3} end={0} />
+        <Line ref={crack2} points={[[100, 150], [20, 50], [80, -20]]} stroke={'#000000'} lineWidth={3} end={0} />
+      </Rect>
 
-      {/* THE DISTORTION GLASS */}
-      <Layout>
-        <Rect
-            ref={distortionGlass}
-            width={300}
-            height={400}
-            x={-200}
-            y={50}
-            fill={'#000000'}
-            stroke={'#555555'}
-            lineWidth={4}
-            opacity={0}
-        />
-        <Layout ref={crackLines} opacity={0} x={-200} y={50}>
-            <Line stroke={'#ffffff'} lineWidth={2} points={[new Vector2(0, 0), new Vector2(50, -50)]} />
-            <Line stroke={'#ffffff'} lineWidth={2} points={[new Vector2(0, 0), new Vector2(-40, 60)]} />
-            <Line stroke={'#ffffff'} lineWidth={2} points={[new Vector2(0, 0), new Vector2(20, 80)]} />
-        </Layout>
-      </Layout>
-
-    </Layout> // END OF CONTAINER
+      {/* UPDATED TEXT: Readable Version */}
+      <Txt
+        ref={textRef}
+        text={'PERCEPTION IS DISTORTED'}
+        y={320}
+        fill={'#ffffff'} // Pure White (Was Grey)
+        fontFamily={'Segoe UI, Helvetica, sans-serif'}
+        fontSize={45}
+        fontWeight={700} // BOLD
+        shadowColor={'#000000'} // Black outline/shadow
+        shadowBlur={5}
+        opacity={0}
+        letterSpacing={4}
+      />
+    </>
   );
 
-  // --- ANIMATION START ---
-
-  // 1. Enter The Observer
-  yield* observerRef().x(-200, 1.5, easeInOutCubic);
-  
-  yield* waitFor(0.5);
-
-  // 2. The Distortion Lens Appears
+  yield* glassRef().opacity(0.3, 1);
+  yield* textRef().opacity(1, 1);
   yield* all(
-    distortionGlass().opacity(0.6, 1),
-    distortionGlass().x(-200, 1) 
+    crack1().end(1, 0.1),
+    crack2().end(1, 0.1),
+    glassRef().rotation(2, 0.1, easeInCubic),
   );
-
-  // 3. The Crack (with SAFE Shake)
-  yield* crackLines().opacity(1, 0.1);
-  
-  // FIX: Shake 'sceneContainer' instead of 'view'
-  // This shakes the objects, but the black background stays put.
-  yield* sceneContainer().position([5, 5], 0.05).to([-5, -5], 0.05).to([0, 0], 0.05);
-
-  // 4. Darken the world
-  yield* perfectCircle().opacity(0.3, 2);
-
-  yield* waitFor(2);
 });

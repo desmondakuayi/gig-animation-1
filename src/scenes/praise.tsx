@@ -1,114 +1,54 @@
-import {makeScene2D, Circle, Txt, Layout, Rect} from '@motion-canvas/2d';
-import {createRef, all, waitFor, range, createSignal} from '@motion-canvas/core';
+import {makeScene2D, Circle, Rect, Layout, Txt} from '@motion-canvas/2d';
+import {createRef, all, sequence, easeInOutSine, easeOutCubic} from '@motion-canvas/core';
 
 export default makeScene2D(function* (view) {
-  view.fill('#000000');
-
-  // RE-CREATE SCENE 1 END STATE
-  // We need these to exist so the transition is invisible
-  const perfectCircle = createRef<Circle>();
-  const mainText = createRef<Txt>();
-  const subText = createRef<Txt>();
-  
-  // NEW SCENE 2 ASSETS
-  const paintingFrame = createRef<Rect>();
-  const musicContainer = createRef<Layout>();
-  const musicSignal = createSignal(0);
+  const coreRef = createRef<Circle>();
+  const raysRef = createRef<Layout>();
+  const textRef = createRef<Txt>();
 
   view.add(
-    <Layout>
-      {/* 1. STATE FROM PREVIOUS SCENE */}
-      {/* Notice we hard-code the 'y', 'scale' and 'fill' to match Scene 1's end */}
-      <Circle
-        ref={perfectCircle}
-        size={400}
-        stroke={'#ffffff'}
-        lineWidth={8}
-        startAngle={-90}
-        endAngle={270}
-        y={-50}         
-        fill={'#ffffff'} 
-        scale={0.5}      
-        opacity={1}
-      />
-      
-      <Txt
-        ref={mainText}
-        text={"INVISIBLE ATTRIBUTES"}
-        fill={'#ffffff'}
-        fontFamily={'JetBrains Mono, monospace'}
-        fontSize={40}
-        y={100}      // Match Scene 1 End
-        opacity={1}  // Match Scene 1 End
-      />
-       <Txt
-        ref={subText}
-        text={"clearly seen"}
-        fill={'#aaaaaa'}
-        fontSize={24}
-        y={150}      // Match Scene 1 End
-        opacity={1}  // Match Scene 1 End
-      />
+    <>
+      <Rect size={'100%'} fill={'#0a0a1a'} />
 
-      {/* 2. HIDDEN ASSETS FOR THIS SCENE */}
-      <Rect
-        ref={paintingFrame}
-        size={200}       // size(400) * scale(0.5) = 200
-        radius={100}     
-        stroke={'#ffffff'}
-        lineWidth={8}
-        opacity={0}
-      />
-
-      <Layout ref={musicContainer} opacity={0} y={50}>
-        {range(5).map(i => (
-            <Rect
-                width={40}
-                height={() => 50 + musicSignal() * (Math.random() * 200)}
-                fill={'#ffffff'}
-                x={(i - 2) * 60}
-                radius={20}
-            />
-        ))}
+      <Layout ref={raysRef} opacity={0} rotation={-30}>
+         <Rect width={20} height={600} fill={'#ffffff'} opacity={0.1} y={-100} blur={20} />
+         <Rect width={40} height={600} fill={'#ffffff'} opacity={0.2} rotation={45} blur={30} />
+         <Rect width={20} height={600} fill={'#ffffff'} opacity={0.1} rotation={-45} blur={20} />
       </Layout>
-    </Layout>
+
+      <Circle
+        ref={coreRef}
+        size={300}
+        fill={'#ffffff'}
+        shadowBlur={60}
+        shadowColor={'#ffffff'}
+      />
+
+      {/* UPDATED TEXT: Readable Version */}
+      <Txt
+        ref={textRef}
+        text={'Whose painting is that?'}
+        y={320} // Moved down further
+        fill={'#ffffff'}
+        fontFamily={'Segoe UI, Helvetica, sans-serif'}
+        fontSize={50} // Slightly bigger
+        fontWeight={700} // BOLD (was 300)
+        shadowColor={'#000000'} // Black shadow for contrast
+        shadowBlur={10}
+        opacity={0}
+        letterSpacing={2}
+      />
+    </>
   );
 
-  // --- ANIMATION START ---
-  
-  // 1. Clear text immediately (or fade out)
   yield* all(
-    mainText().opacity(0, 0.5),
-    subText().opacity(0, 0.5),
+    coreRef().position.y(-50, 2, easeInOutSine),
+    coreRef().shadowBlur(100, 2, easeInOutSine),
+    raysRef().opacity(1, 1),
+    raysRef().rotation(0, 4, easeOutCubic),
+    textRef().opacity(1, 2),
+    textRef().letterSpacing(5, 2, easeOutCubic),
   );
-
-  // 2. The Swap
-  paintingFrame().position(perfectCircle().position());
-  paintingFrame().fill(perfectCircle().fill());
   
-  perfectCircle().opacity(0);
-  paintingFrame().opacity(1);
-
-  // 3. Morph to Painting
-  yield* all(
-    paintingFrame().radius(0, 1),
-    paintingFrame().size([500, 350], 1),
-    paintingFrame().fill(null, 1),
-    paintingFrame().y(0, 1)
-  );
-
-  yield* waitFor(0.5);
-
-  // 4. Morph to Music
-  yield* paintingFrame().size([0, 10], 0.5);
-  paintingFrame().opacity(0);
-
-  musicContainer().opacity(1);
-
-  for (let i = 0; i < 4; i++) {
-    yield* musicSignal(1, 0.2).to(0, 0.2);
-    yield* musicSignal(0.8, 0.1).to(0, 0.2);
-  }
-  
-  yield* waitFor(1);
+  yield* coreRef().scale(1.1, 2, easeInOutSine).to(1, 2, easeInOutSine);
 });
